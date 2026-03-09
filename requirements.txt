@@ -1,0 +1,27 @@
+# Core
+opencv-python==4.11.0.86
+Pillow>=10.0.0
+numpy==1.24.4
+
+# YOLO
+ultralytics==8.3.138
+ultralytics-thop==2.0.14
+
+# API
+fastapi==0.115.12
+uvicorn==0.34.2
+python-multipart==0.0.20
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# --- Compatibility Layer for PaddleX 3.0.0 ---
+langchain==0.1.16
+langchain-community==0.0.34
+langchain-core==0.1.45
+langsmith==0.1.50
+
+# Utils
+redis==5.0.1
+pyodbc==5.2.0
+python-dotenv==1.1.0
+ffmpeg-python==0.2.0

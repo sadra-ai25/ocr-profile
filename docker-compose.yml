@@ -1,0 +1,89 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    ports:
+      - "8555:8554"
+    restart: unless-stopped
+    networks:
+      - scanner_net
+
+  rtsp_simulator:
+    image: jrottenberg/ffmpeg:4.1-alpine
+    depends_on:
+      - mediamtx
+    volumes:
+      - ./datasets/video_2025-12-16_13-52-52.mp4:/input/video.mp4
+    command:
+      - -re
+      - -stream_loop
+      - "-1"
+      - -i
+      - /input/video.mp4
+      - -c:v
+      - libx264
+      - -b:v
+      - 5M
+      - -maxrate
+      - 5M
+      - -bufsize
+      - 10M
+      - -preset
+      - fast
+      - -c:a
+      - copy
+      - -f
+      - rtsp
+      - rtsp://mediamtx:8554/mystream
+    restart: always
+    networks:
+      - scanner_net
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6381:6379"
+    restart: always
+    networks:
+      - scanner_net
+
+  scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ocr
+    command:
+      - "uvicorn"
+      - "api.endpoint:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8006"   
+    ports:
+      - "8006:8006"
+    volumes:
+      - ./outputs:/app/outputs
+      - ./src:/app/src
+      - ./.env:/app/.env
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+      - PYTHONPATH=/app/src
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      - redis
+      - mediamtx
+    # restart: unless-stopped
+    networks:
+      - scanner_net
+
+networks:
+  scanner_net:
+    driver: bridge

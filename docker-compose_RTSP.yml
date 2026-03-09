@@ -1,0 +1,44 @@
+
+### docker compose only for real RTSP (no mediamtx) ###
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6381:6379"
+    restart: always
+    networks:
+      - ai_net
+
+  ocr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ocr
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs:/app/outputs
+      - ./src:/app/src
+      - ./.env:/app/.env
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+      - PYTHONPATH=/app/src
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - ai_net
+
+networks:
+  ai_net:
+    driver: bridge

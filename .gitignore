@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+.pyc
+.pyo
+.pyd
+.Python
+.so
+.egg
+.egg-info/
+dist/
+build/
+
+# Outputs & Databases
+output/
+*.db
+*.sqlite
+
+# Large files & Archives
+*.tar
+*.zip
+src/ai/weights/
+
+# Samples (Videos)
+datasets/
+outputs/
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
