@@ -7,6 +7,7 @@ Automated OCR system for reading size markings stenciled on steel profiles on a 
 ## Features
 
 - **Two-stage pipeline** — YOLOv8 localizes the label area; PaddleOCR reads the size text
+- **Fuzzy text matching** — post-OCR normalization handles common OCR errors (e.g. `6ROUP` → `GROUP`, `0` vs `O`) using variant lists and regex cleanup
 - **ROI cropping** — configurable ROI region narrows the search area for faster, more accurate OCR
 - **GPU acceleration** — optional CUDA support via `USE_GPU` and `CUDA_VISIBLE_DEVICES`
 - **Redis frame queue** — decoupled producer/consumer for reliable stream processing
@@ -94,26 +95,38 @@ docker compose up -d --build
 
 ## API Endpoints
 
+The RTSP pipeline starts automatically on service startup. Use these endpoints to control it:
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/health` | Service health and GPU status |
-| `POST` | `/start` | Start RTSP stream processing |
-| `POST` | `/stop` | Stop stream processing |
-| `GET` | `/readings` | Get recent OCR readings |
-| `GET` | `/readings/latest` | Get the most recent size reading |
+| `GET` | `/` | Service health — returns status and active device (CPU/GPU) |
+| `POST` | `/rtsp/start` | (Re)start RTSP stream, optionally with a session name |
+| `POST` | `/rtsp/stop` | Stop RTSP stream processing |
+| `POST` | `/video` | Upload a video file for analysis (background task) |
+| `POST` | `/reports` | Query profile OCR results with optional time range filter |
 
-### Example: Get Latest Reading
+### Example: Start RTSP with Session Name
 
 ```bash
-curl http://localhost:8000/readings/latest
+curl -X POST "http://localhost:8000/rtsp/start?session_name=morning_shift"
+```
+
+### Example: Query Readings for a Time Range
+
+```bash
+curl -X POST http://localhost:8000/reports \
+  -H "Content-Type: application/json" \
+  -d '{"start_time": "2024-01-15 07:00:00", "end_time": "2024-01-15 15:00:00"}'
 ```
 
 ```json
 {
-  "size": "IPE160",
-  "confidence": 0.97,
-  "timestamp": "2024-01-15T10:23:45",
-  "camera_id": "cam1"
+  "status": "success",
+  "count": 58,
+  "data": [
+    {"profile_type": "IPE160", "timestamp": "2024-01-15T08:23:45"},
+    {"profile_type": "GROUP",  "timestamp": "2024-01-15T09:11:02"}
+  ]
 }
 ```
 
